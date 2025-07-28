@@ -10,6 +10,7 @@ from mpest.em import EM
 from mpest.em.methods.l_moments_method import LMomentsMStep
 from mpest.em.methods.likelihood_method import BayesEStep, LikelihoodMStep
 from mpest.em.methods.method import Method
+from mpest.em.methods.moments_method import MomentsMStep
 from mpest.optimizers import ALL_OPTIMIZERS
 from mpest.utils import ANamed, Factory, ResultWithLog
 from tqdm import tqdm
@@ -19,6 +20,7 @@ from experimental_env.utils import OrderedProblem, choose_best_mle
 METHODS: dict = {
     "Likelihood": [[Factory(BayesEStep), Factory(LikelihoodMStep, optimizer)] for optimizer in ALL_OPTIMIZERS],
     "L-moments": [Factory(BayesEStep), Factory(LMomentsMStep)],
+    "Moments": [Factory(BayesEStep), Factory(MomentsMStep)],
 }
 
 
@@ -109,6 +111,49 @@ class LMomentsEstimator(AEstimator):
         output = {}
         random.seed(seed)
         print("Starting L-moments estimation")
+        ordered_problem = [
+            OrderedProblem(problem.samples, problem.distributions, i) for i, problem in enumerate(problems)
+        ]
+        with tqdm(total=len(problems)) as pbar, ProcessPoolExecutor(max_workers=cpu_count) as executor:
+            fs = [executor.submit(self._helper, problem) for problem in ordered_problem]
+            for f in as_completed(fs):
+                pbar.update()
+                res = f.result()
+                output[res[1]] = res[0]
+
+        return [res for num, res in sorted(output.items())]
+
+
+class MomentsEstimator(AEstimator):
+    """
+    An estimator using the Moments method.
+    """
+
+    def __init__(self, brkpointer, dst_checker):
+        self._brkpointer = brkpointer
+        self._dst_checker = dst_checker
+
+    @property
+    def name(self):
+        return "EMM"
+
+    def _helper(self, problem: OrderedProblem):
+        """
+        Helper function for multiprocessed estimation
+        """
+        steps = METHODS["Moments"]
+        new_method = Method(steps[0].construct(), steps[1].construct())
+        em_factory = Factory(EM, self._brkpointer, self._dst_checker, new_method)
+
+        return (
+            em_factory.construct().solve_logged(problem, True, True, True),
+            problem.number,
+        )
+
+    def estimate(self, problems: list[Problem], cpu_count: int, seed: int = 42) -> list[ResultWithLog]:
+        output = {}
+        random.seed(seed)
+        print("Starting Moments estimation")
         ordered_problem = [
             OrderedProblem(problem.samples, problem.distributions, i) for i, problem in enumerate(problems)
         ]

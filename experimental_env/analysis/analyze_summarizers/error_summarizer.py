@@ -49,16 +49,31 @@ class ErrorSummarizer(AnalysisSummarizer):
 
         return float(mean), float(std), float(median), float(percentile_90), float(percentile_95)
 
+    def _create_metrics_dict(self, mean, deviation, median, percentile_90, percentile_95, prefix="") -> dict:
+        """
+        Creates a dictionary of metrics, including only those whose value is between 0 and 1.
+        """
+        potential_metrics = {
+            "mean": mean,
+            "standard_deviation": deviation,
+            "median": median,
+            "percentile_90": percentile_90,
+            "percentile_95": percentile_95,
+        }
+
+        info_dict = {}
+        for name, value in potential_metrics.items():
+            if value <= 1:
+                key = f"{prefix}{name}"
+                info_dict[key] = round_sig(value, 3)
+
+        return info_dict
+
     def analyze_method(self, results: list[ExperimentDescription], method: str):
         mean, deviation, median, percentile_90, percentile_95 = self.calculate(results)
 
-        info_dict = {
-            "mean": round_sig(mean, 3),
-            "standart_deviation": round_sig(deviation, 3),
-            "median": round_sig(median, 3),
-            "percentile_90": round_sig(percentile_90, 3),
-            "percentile_95": round_sig(percentile_95, 3),
-        }
+        info_dict = self._create_metrics_dict(mean, deviation, median, percentile_90, percentile_95)
+
         yaml_path: Path = self._out_dir.joinpath("metric_info.yaml")
 
         with open(yaml_path, "w", encoding="utf-8") as file:
@@ -74,18 +89,16 @@ class ErrorSummarizer(AnalysisSummarizer):
         mean_1, deviation_1, median_1, percentile_90_1, percentile_95_1 = self.calculate(results_1)
         mean_2, deviation_2, median_2, percentile_90_2, percentile_95_2 = self.calculate(results_2)
 
-        info_dict = {
-            f"{method_1}_mean": round_sig(mean_1, 3),
-            f"{method_1}_standart_deviation": round_sig(deviation_1, 3),
-            f"{method_1}_median": round_sig(median_1, 3),
-            f"{method_1}_percentile_90": round_sig(percentile_90_1, 3),
-            f"{method_1}_percentile_95": round_sig(percentile_95_1, 3),
-            f"{method_2}_mean": round_sig(mean_2, 3),
-            f"{method_2}_standart_deviation": round_sig(deviation_2, 3),
-            f"{method_2}_median": round_sig(median_2, 3),
-            f"{method_2}_percentile_90": round_sig(percentile_90_2, 3),
-            f"{method_2}_percentile_95": round_sig(percentile_95_2, 3),
-        }
+        info_dict_1 = self._create_metrics_dict(
+            mean_1, deviation_1, median_1, percentile_90_1, percentile_95_1, prefix=f"{method_1}_"
+        )
+
+        info_dict_2 = self._create_metrics_dict(
+            mean_2, deviation_2, median_2, percentile_90_2, percentile_95_2, prefix=f"{method_2}_"
+        )
+
+        info_dict = {**info_dict_1, **info_dict_2}
+
         yaml_path: Path = self._out_dir.joinpath("metric_info.yaml")
 
         with open(yaml_path, "w", encoding="utf-8") as file:

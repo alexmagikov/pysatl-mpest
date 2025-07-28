@@ -101,7 +101,14 @@ class WeibullModelExp(AModelDifferentiable, AModelWithGenerator):
         def equation_for_k(k):
             return gamma(1 + 2 / k) / (gamma(1 + 1 / k) ** 2) - moments_ratio
 
+        if equation_for_k(0.02) * equation_for_k(100) > 0:
+            raise ValueError(
+                f"Cannot find root: function values at bracket [0.02, 100] ends have the same sign. "
+                f"This occurred for m1={m1}, m2={m2}."
+            )
+
         solution = root_scalar(equation_for_k, method="brentq", bracket=[0.02, 100])
+
         if not solution.converged:
             raise RuntimeError(f"Error in calculating the equation: m1={m1}, m2={m2}")
 

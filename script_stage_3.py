@@ -15,15 +15,15 @@ from experimental_env.analysis.analyze_summarizers.time_summarizer import TimeSu
 from experimental_env.analysis.metrics import SquaredError
 from experimental_env.experiment.experiment_parser import ExperimentParser
 
-WORKING_DIR = Path(dir_stage_2)
+WORKING_DIR = Path("D:\mpest\stage_3")
 
-LIKELIHOOD_DIR = Path(dir_EM_results)
-LMOMENTS_DIR = Path(dir_ELM_results)
+MOMEMNTS_DIR = Path("D:\mpest\stage_2\EMM")
+LMOMENTS_DIR = Path("D:\mpest\stage_2\ELM")
 
 results_1 = ExperimentParser().parse(LMOMENTS_DIR)
-results_2 = ExperimentParser().parse(LIKELIHOOD_DIR)
+results_2 = ExperimentParser().parse(MOMEMNTS_DIR)
 
 analyze_actions = [DensityPlot(), TimePlot(), ErrorConvergence(SquaredError())]
 analyze_summarizers = [ErrorSummarizer(SquaredError()), TimeSummarizer()]
 
-Analysis(WORKING_DIR, analyze_actions, analyze_summarizers).compare(results_1, results_2, "ELM", "MLE-EM")
+Analysis(WORKING_DIR, analyze_actions, analyze_summarizers).compare(results_1, results_2, "ELM", "EMM")

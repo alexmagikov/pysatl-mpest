@@ -74,7 +74,13 @@ class MomentsMStep(AMaximization[EResult]):
         new_distributions = []
 
         for j, d in enumerate(mixture):
-            new_params = d.model.calc_moments_params(moments[j])
+            try:
+                new_params = d.model.calc_moments_params(moments[j])
+            except ValueError as error:
+                return ResultWithError(mixture.distributions, error)
+            except RuntimeError as error:
+                return ResultWithError(mixture.distributions, error)
+
             new_d = Distribution(d.model, d.model.params_convert_to_model(new_params))
             new_distributions.append(new_d)
 

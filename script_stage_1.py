@@ -7,8 +7,8 @@ from experimental_env.preparation.dataset_generator import (
 )
 from mpest.models import ExponentialModel, GaussianModel, WeibullModelExp
 
-WORKING_DIR = Path(dir_stage_1)
-SAMPLES_SIZE = 1000
+WORKING_DIR = Path("D:\mpest\stage_1")
+SAMPLES_SIZE = 200
 
 r_generator = RandomDatasetGenerator(42)
 mixtures = [
@@ -21,4 +21,4 @@ mixtures = [
     [ExponentialModel, ExponentialModel],
 ]
 for models in mixtures:
-    r_generator.generate(SAMPLES_SIZE, models, Path(WORKING_DIR), exp_count=100)
+    r_generator.generate(SAMPLES_SIZE, models, Path(WORKING_DIR), exp_count=5)
